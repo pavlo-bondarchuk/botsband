@@ -78,7 +78,7 @@ def main():
             save(href,kind)
     for node in soup.select('script[src]'):
         save(node.get('src',''),'js/original')
-    css_urls=re.compile(r'url\\(\\s*[\\x22\\x27]?([^\\x22\\x27)]+)')
+    css_urls=re.compile(r"url\(\s*['\"]?([^'\"\)]+)")
     for stylesheet in list((ROOT/'assets/css/original').glob('*.css')):
         content=stylesheet.read_text(errors='replace')
         for match in css_urls.finditer(content):
@@ -102,7 +102,7 @@ def main():
                 return match.group(0)
             relative='../'+'../'+str(Path(local).relative_to('assets'))
             return 'url('+match.group(1)+relative+match.group(3)+')'
-        content=re.sub(r'url\\(\\s*([\\x22\\x27]?)([^\\x22\\x27)]+)([\\x22\\x27]?)\\s*\\)',css_rewrite,content)
+        content=re.sub(r"url\(\s*(['\"]?)([^'\"\)]+)(['\"]?)\s*\)",css_rewrite,content)
         stylesheet.write_text(content)
     markup=HTML.read_text()
     names={}
