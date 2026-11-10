@@ -1,0 +1,44 @@
+name: Archive original assets and visual review
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/archive_assets.py
+      - .github/workflows/archive-and-compare.yml
+permissions:
+  contents: write
+jobs:
+  archive:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install archive dependencies
+        run: pip install requests beautifulsoup4
+      - name: Collect original images, scripts, styles and fonts
+        run: python scripts/archive_assets.py
+      - name: Commit mirrored assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Mirror original BotsBand public assets"
+            git push
+          fi
+      - name: Install browser for visual review
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Capture desktop and mobile comparison
+        run: python scripts/visual_review.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: botsband-desktop-mobile-review
+          path: reports/
+          retention-days: 14
