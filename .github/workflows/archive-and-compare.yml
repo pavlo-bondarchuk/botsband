@@ -32,10 +32,13 @@ jobs:
           fi
       - name: Install browser for visual review
         run: |
-          pip install playwright
+          pip install playwright pillow
           python -m playwright install --with-deps chromium
       - name: Capture desktop and mobile comparison
         run: python scripts/visual_review.py
+      - name: Compare original and static screenshots
+        if: always()
+        run: python scripts/compare_images.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
