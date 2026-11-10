@@ -1,0 +1,1 @@
+Original image URLs are currently referenced from botsband.online in index.html. Binary image mirroring was not available in the execution environment. Replace each remote URL with a downloaded local asset before considering this an offline-complete copy.
