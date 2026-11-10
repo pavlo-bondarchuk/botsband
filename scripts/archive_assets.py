@@ -91,7 +91,35 @@ def main():
                 save(absolute,'fonts')
             elif ext in resource_exts:
                 save(absolute,'img')
+    for stylesheet in list((ROOT/'assets/css/original').glob('*.css')):
+        content=stylesheet.read_text(errors='replace')
+        source=next((key for key,val in mapping.items() if val==stylesheet.relative_to(ROOT).as_posix()),BASE)
+        def css_rewrite(match):
+            raw=match.group(2)
+            absolute=urljoin(source,raw)
+            local=mapping.get(absolute)
+            if not local:
+                return match.group(0)
+            relative='../'+'../'+str(Path(local).relative_to('assets'))
+            return 'url('+match.group(1)+relative+match.group(3)+')'
+        content=re.sub(r'url\\(\\s*([\\x22\\x27]?)([^\\x22\\x27)]+)([\\x22\\x27]?)\\s*\\)',css_rewrite,content)
+        stylesheet.write_text(content)
     markup=HTML.read_text()
+    names={}
+    for url,local in mapping.items():
+        name=Path(urlparse(url).path).name.lower()
+        names.setdefault(name,local)
+        if name.endswith('.webp'):
+            names.setdefault(name[:-5],local)
+    def localize(match):
+        quoted_url=match.group(1)
+        url=quoted_url.split('?',1)[0]
+        local=mapping.get(quoted_url)
+        if local is None:
+            name=Path(urlparse(url).path).name.lower()
+            local=names.get(name) or names.get(name+'.webp')
+        return 'src="'+local+'"' if local else match.group(0)
+    markup=re.sub(r'src="(https?://botsband\\.online/[^"]+)"',localize,markup)
     for url,local in sorted(mapping.items(),key=lambda item:-len(item[0])):
         markup=markup.replace(url,local)
     HTML.write_text(markup)
